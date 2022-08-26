@@ -5,24 +5,31 @@ import * as React from 'react'
 import {PokemonDataView, fetchPokemon, PokemonErrorBoundary} from '../pokemon'
 
 function createResource(promise) {
-  let resourceData
-  let resourceError
+  let status = 'pending'
 
-  const resultedPromise = promise
-    .then(data => (resourceData = data))
-    .catch(error => (resourceError = error))
+  let resource = promise
+    .then(resolved => {
+      status = 'success'
+      resource = resolved
+    })
+    .catch(error => {
+      status = 'rejected'
+      resource = error
+    })
 
   return {
     read: () => {
-      if (resourceError) {
-        throw resourceError
+      if (status === 'pending') {
+        throw resource
       }
 
-      if (!resourceData) {
-        throw resultedPromise
+      if (status === 'rejected') {
+        throw resource
       }
 
-      return resourceData
+      if (status === 'success') {
+        return resource
+      }
     },
   }
 }
