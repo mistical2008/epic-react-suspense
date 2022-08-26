@@ -4,20 +4,33 @@
 import * as React from 'react'
 import {PokemonDataView, fetchPokemon, PokemonErrorBoundary} from '../pokemon'
 
-let pokemon
-let error
+function createResource(promise) {
+  let resourceData
+  let resourceError
 
-const pokemonPromise = fetchPokemon('pikachu')
-  .then(data => (pokemon = data))
-  .catch(err => (error = err))
+  const resultedPromise = promise
+    .then(data => (resourceData = data))
+    .catch(error => (resourceError = error))
+
+  return {
+    read: () => {
+      if (resourceError) {
+        throw resourceError
+      }
+
+      if (!resourceData) {
+        throw resultedPromise
+      }
+
+      return resourceData
+    },
+  }
+}
+
+const resource = createResource(fetchPokemon('pikachu'))
 
 function PokemonInfo() {
-  if (error) {
-    throw error
-  }
-  if (!pokemon) {
-    throw pokemonPromise
-  }
+  const pokemon = resource.read()
 
   return (
     <div>
@@ -34,7 +47,7 @@ function App() {
     <div className="pokemon-info-app">
       <div className="pokemon-info">
         {/* 🐨 Wrap the PokemonInfo component with a React.Suspense component with a fallback */}
-        <PokemonErrorBoundary error={error}>
+        <PokemonErrorBoundary>
           <React.Suspense fallback="Loading...">
             <PokemonInfo />
           </React.Suspense>
